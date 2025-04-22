@@ -118,7 +118,7 @@ struct WalletKitConfigImpl: WalletKitConfig {
       "pidissuerca02_lu",
       "pidissuerca02_nl",
       "pidissuerca02_pt",
-      "pidissuerca02_ut"
+      "pidissuerca02_ut",
       "Cert1",
       "Cert2"
     ]
