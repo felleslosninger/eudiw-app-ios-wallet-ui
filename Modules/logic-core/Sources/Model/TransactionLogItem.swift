@@ -13,24 +13,8 @@
  * ANY KIND, either express or implied. See the Licence for the specific language
  * governing permissions and limitations under the Licence.
  */
-<<<<<<<< HEAD:Modules/logic-core/Sources/Extension/TransactionLog+Extension.swift
-import logic_storage
-import EudiWalletKit
-import Foundation
 
-extension logic_storage.TransactionLog {
-  func toCoreTransactionLog() throws -> EudiWalletKit.TransactionLog {
-    guard
-      let value = self.value.data(using: .utf8),
-      let coreLog = try? JSONDecoder().decode(EudiWalletKit.TransactionLog.self, from: value)
-    else {
-      throw WalletCoreError.unableToFetchTransactionLog
-    }
-    return coreLog
-  }
-========
 public struct TransactionLogItem: Sendable {
   public let id: String
   public let transactionLogData: TransactionLogData
->>>>>>>> upstream/main:Modules/logic-core/Sources/Model/TransactionLogItem.swift
 }
