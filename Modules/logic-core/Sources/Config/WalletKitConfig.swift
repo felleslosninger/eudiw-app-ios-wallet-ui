@@ -112,7 +112,7 @@ struct WalletKitConfigImpl: WalletKitConfig {
 
   var readerConfig: ReaderConfig {
     let certificates = [
-      "new_Trusted_Cert"
+      "eidas2sandkasse_net_access_CA"
     ]
     let certsData: [Data] = certificates.compactMap {
       Data(name: $0, ext: "der")
