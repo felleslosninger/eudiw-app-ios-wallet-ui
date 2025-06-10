@@ -15,7 +15,6 @@
  */
 import feature_common
 import logic_core
-import Logging
 
 final class PresentationRequestViewModel<Router: RouterHost>: BaseRequestViewModel<Router> {
 
@@ -64,8 +63,7 @@ final class PresentationRequestViewModel<Router: RouterHost>: BaseRequestViewMod
           )
         )
       }
-    case .failure(let error):
-      Logger(label: "❌ Setting empty documents state. PresentationRequest Failed").error("Error: \(error)")
+    case .failure:
       self.onEmptyDocuments()
     }
   }
