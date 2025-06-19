@@ -76,7 +76,7 @@ private func content(
 ) -> some View {
   ScrollView {
     VStack(alignment: .leading, spacing: SPACING_MEDIUM) {
-      ContentHeader(
+      ContentHeaderView(
         config: viewState.contentHeaderConfig
       )
 

@@ -19,7 +19,7 @@ import logic_resources
 
 public struct BaseRequestView<Router: RouterHost>: View {
 
-  @ObservedObject var viewModel: BaseRequestViewModel<Router>
+  @ObservedObject private var viewModel: BaseRequestViewModel<Router>
 
   public init(with router: Router, viewModel: BaseRequestViewModel<Router>) {
     self.viewModel = viewModel
@@ -97,7 +97,7 @@ private func scrollableContent(
 ) -> some View {
   ScrollView {
     VStack(spacing: .zero) {
-      ContentHeader(
+      ContentHeaderView(
         config: viewState.contentHeaderConfig
       )
       ZStack {
@@ -137,7 +137,7 @@ private func noDocumentsFound(
   viewState: RequestViewState
 ) -> some View {
   VStack(spacing: .zero) {
-    ContentHeader(
+    ContentHeaderView(
       config: viewState.contentHeaderConfig
     )
     VStack(spacing: .zero) {

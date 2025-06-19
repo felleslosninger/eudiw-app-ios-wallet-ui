@@ -13,16 +13,21 @@
  * ANY KIND, either express or implied. See the Licence for the specific language
  * governing permissions and limitations under the Licence.
  */
-@testable import feature_presentation
-@testable import feature_test
-@testable import logic_test
+import logic_storage
+import EudiWalletKit
+import Foundation
 
-final class BaseTests: EudiTest {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
-
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
+extension logic_storage.TransactionLog {
+  func toTransactionLogItem(
+    id: String,
+    parse: (EudiWalletKit.TransactionLog) -> (TransactionLogData)
+  ) throws -> TransactionLogItem {
+    guard
+      let value = self.value.data(using: .utf8),
+      let coreLog = try? JSONDecoder().decode(EudiWalletKit.TransactionLog.self, from: value)
+    else {
+      throw WalletCoreError.unableToFetchTransactionLog
     }
+    return .init(id: id, transactionLogData: parse(coreLog))
+  }
 }

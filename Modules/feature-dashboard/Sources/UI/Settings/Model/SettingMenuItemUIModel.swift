@@ -13,33 +13,31 @@
  * ANY KIND, either express or implied. See the Licence for the specific language
  * governing permissions and limitations under the Licence.
  */
-import SwiftUI
+import Foundation
 import logic_resources
 
-public struct ListDivider: View {
+struct SettingMenuItemUIModel: Identifiable {
 
-  private let backgroundColor: Color
-  private let height: CGFloat
-  private let spacing: CGFloat
+  let id: String
+  let title: LocalizableStringKey
+  let showDivider: Bool
+  let isShareLink: Bool
+  let isToggle: Bool
+  let action: () -> Void
 
-  public init(
-    backgroundColor: Color = Theme.shared.color.onSurfaceVariant.opacity(0.2),
-    height: CGFloat = 1,
-    spacing: CGFloat = SPACING_MEDIUM
+  init(
+    id: String = UUID().uuidString,
+    title: LocalizableStringKey,
+    showDivider: Bool = true,
+    isShareLink: Bool = false,
+    isToggle: Bool = false,
+    action: @autoclosure @escaping () -> Void
   ) {
-    self.backgroundColor = backgroundColor
-    self.height = height
-    self.spacing = spacing
+    self.id = id
+    self.title = title
+    self.showDivider = showDivider
+    self.isShareLink = isShareLink
+    self.isToggle = isToggle
+    self.action = action
   }
-
-  public var body: some View {
-    Rectangle()
-      .fill(backgroundColor)
-      .frame(height: height)
-      .padding(.horizontal, spacing)
-  }
-}
-
-#Preview {
-  ListDivider()
 }

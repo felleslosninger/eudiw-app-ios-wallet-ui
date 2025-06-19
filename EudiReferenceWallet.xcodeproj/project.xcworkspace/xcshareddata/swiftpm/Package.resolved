@@ -1,5 +1,5 @@
 {
-  "originHash" : "866b733b0bc0a641bd301c02aee0d9df78c1b33bea4e08034526869de858f9d2",
+  "originHash" : "5c270928a32fe8508d24d3343efdc6220c1f93669fc754ec73038d3223a5cd35",
   "pins" : [
     {
       "identity" : "activityindicatorview",
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-rqes-ui.git",
       "state" : {
-        "revision" : "04c277944ec73a343c557a627a41f022692f172f",
-        "version" : "0.1.9"
+        "revision" : "bdb16533c6fdc090fcb74df05ccbc6174fecfd7d",
+        "version" : "0.2.1"
       }
     },
     {
@@ -195,8 +195,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-wallet-kit.git",
       "state" : {
-        "revision" : "88bd05ab16db4001091bfca97276432732414acb",
-        "version" : "0.11.4"
+        "revision" : "baf0df5883e89f107dd2bc82f085076ed80a1610",
+        "version" : "0.11.7"
       }
     },
     {
@@ -384,8 +384,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "41982a3656a71c768319979febd796c6fd111d5c",
-        "version" : "1.5.0"
+        "revision" : "011f0c765fb46d9cac61bca19be0527e99c98c8b",
+        "version" : "1.5.1"
       }
     },
     {
@@ -411,8 +411,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "671108c96644956dddcd89dd59c203dcdb36cec7",
-        "version" : "1.1.4"
+        "revision" : "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
+        "version" : "1.2.0"
       }
     },
     {
@@ -512,15 +512,6 @@
       "state" : {
         "revision" : "ec6198d37d495efc6acd4dffbd262cdca7ff9b3f",
         "version" : "0.6.0"
-      }
-    },
-    {
-      "identity" : "uipilot",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/canopas/UIPilot.git",
-      "state" : {
-        "revision" : "33b8123dd1e68d861d0cfce27879d5ff1755fd21",
-        "version" : "2.0.2"
       }
     },
     {

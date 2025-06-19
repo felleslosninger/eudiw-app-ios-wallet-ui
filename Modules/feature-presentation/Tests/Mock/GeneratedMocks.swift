@@ -2536,26 +2536,6 @@ public class MockSystemBiometryController: SystemBiometryController, Cuckoo.Prot
     }
 
     
-    public func canEvaluateForBiometrics() -> AnyPublisher<Bool, SystemBiometryError> {
-        return cuckoo_manager.call(
-            "canEvaluateForBiometrics() -> AnyPublisher<Bool, SystemBiometryError>",
-            parameters: (),
-            escapingParameters: (),
-            superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: __defaultImplStub!.canEvaluateForBiometrics()
-        )
-    }
-    
-    public func evaluateBiometrics() -> AnyPublisher<Void, SystemBiometryError> {
-        return cuckoo_manager.call(
-            "evaluateBiometrics() -> AnyPublisher<Void, SystemBiometryError>",
-            parameters: (),
-            escapingParameters: (),
-            superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: __defaultImplStub!.evaluateBiometrics()
-        )
-    }
-    
     public func requestBiometricUnlock() -> AnyPublisher<Void, SystemBiometryError> {
         return cuckoo_manager.call(
             "requestBiometricUnlock() -> AnyPublisher<Void, SystemBiometryError>",
@@ -2575,22 +2555,6 @@ public class MockSystemBiometryController: SystemBiometryController, Cuckoo.Prot
         
         var biometryType: Cuckoo.ProtocolToBeStubbedReadOnlyProperty<MockSystemBiometryController,LABiometryType> {
             return .init(manager: cuckoo_manager, name: "biometryType")
-        }
-        
-        func canEvaluateForBiometrics() -> Cuckoo.ProtocolStubFunction<(), AnyPublisher<Bool, SystemBiometryError>> {
-            let matchers: [Cuckoo.ParameterMatcher<Void>] = []
-            return .init(stub: cuckoo_manager.createStub(for: MockSystemBiometryController.self,
-                method: "canEvaluateForBiometrics() -> AnyPublisher<Bool, SystemBiometryError>",
-                parameterMatchers: matchers
-            ))
-        }
-        
-        func evaluateBiometrics() -> Cuckoo.ProtocolStubFunction<(), AnyPublisher<Void, SystemBiometryError>> {
-            let matchers: [Cuckoo.ParameterMatcher<Void>] = []
-            return .init(stub: cuckoo_manager.createStub(for: MockSystemBiometryController.self,
-                method: "evaluateBiometrics() -> AnyPublisher<Void, SystemBiometryError>",
-                parameterMatchers: matchers
-            ))
         }
         
         func requestBiometricUnlock() -> Cuckoo.ProtocolStubFunction<(), AnyPublisher<Void, SystemBiometryError>> {
@@ -2619,30 +2583,6 @@ public class MockSystemBiometryController: SystemBiometryController, Cuckoo.Prot
         
         
         @discardableResult
-        func canEvaluateForBiometrics() -> Cuckoo.__DoNotUse<(), AnyPublisher<Bool, SystemBiometryError>> {
-            let matchers: [Cuckoo.ParameterMatcher<Void>] = []
-            return cuckoo_manager.verify(
-                "canEvaluateForBiometrics() -> AnyPublisher<Bool, SystemBiometryError>",
-                callMatcher: callMatcher,
-                parameterMatchers: matchers,
-                sourceLocation: sourceLocation
-            )
-        }
-        
-        
-        @discardableResult
-        func evaluateBiometrics() -> Cuckoo.__DoNotUse<(), AnyPublisher<Void, SystemBiometryError>> {
-            let matchers: [Cuckoo.ParameterMatcher<Void>] = []
-            return cuckoo_manager.verify(
-                "evaluateBiometrics() -> AnyPublisher<Void, SystemBiometryError>",
-                callMatcher: callMatcher,
-                parameterMatchers: matchers,
-                sourceLocation: sourceLocation
-            )
-        }
-        
-        
-        @discardableResult
         func requestBiometricUnlock() -> Cuckoo.__DoNotUse<(), AnyPublisher<Void, SystemBiometryError>> {
             let matchers: [Cuckoo.ParameterMatcher<Void>] = []
             return cuckoo_manager.verify(
@@ -2664,14 +2604,6 @@ public class SystemBiometryControllerStub:SystemBiometryController, @unchecked S
     }
 
 
-    
-    public func canEvaluateForBiometrics() -> AnyPublisher<Bool, SystemBiometryError> {
-        return DefaultValueRegistry.defaultValue(for: (AnyPublisher<Bool, SystemBiometryError>).self)
-    }
-    
-    public func evaluateBiometrics() -> AnyPublisher<Void, SystemBiometryError> {
-        return DefaultValueRegistry.defaultValue(for: (AnyPublisher<Void, SystemBiometryError>).self)
-    }
     
     public func requestBiometricUnlock() -> AnyPublisher<Void, SystemBiometryError> {
         return DefaultValueRegistry.defaultValue(for: (AnyPublisher<Void, SystemBiometryError>).self)
@@ -4152,6 +4084,21 @@ import Cuckoo
 
 
 
+// MARK: - Mocks generated from file: '../Modules/logic-business/Sources/Extension/ConfigLogic+Extensions.swift'
+
+import Cuckoo
+import Foundation
+@testable import logic_core
+@testable import logic_business
+@testable import logic_analytics
+@testable import logic_ui
+@testable import logic_api
+@testable import logic_authentication
+@testable import feature_common
+@testable import feature_presentation
+
+
+
 // MARK: - Mocks generated from file: '../Modules/logic-business/Sources/Extension/Data+Extensions.swift'
 
 import Cuckoo
@@ -4323,21 +4270,6 @@ import Foundation
 
 import Cuckoo
 import UIKit
-@testable import logic_core
-@testable import logic_business
-@testable import logic_analytics
-@testable import logic_ui
-@testable import logic_api
-@testable import logic_authentication
-@testable import feature_common
-@testable import feature_presentation
-
-
-
-// MARK: - Mocks generated from file: '../Modules/logic-business/Sources/Functions/ConfigLogic+Extensions.swift'
-
-import Cuckoo
-import Foundation
 @testable import logic_core
 @testable import logic_business
 @testable import logic_analytics
@@ -5159,6 +5091,16 @@ public class MockFilterableItemPayload: FilterableItemPayload, Cuckoo.ProtocolMo
         __defaultImplStub = stub
         cuckoo_manager.enableDefaultStubImplementation()
     }
+    
+    public var id: String {
+        get {
+            return cuckoo_manager.getter(
+                "id",
+                superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
+                defaultCall: __defaultImplStub!.id
+            )
+        }
+    }
 
 
     public struct __StubbingProxy_FilterableItemPayload: Cuckoo.StubbingProxy {
@@ -5166,6 +5108,10 @@ public class MockFilterableItemPayload: FilterableItemPayload, Cuckoo.ProtocolMo
     
         public init(manager: Cuckoo.MockManager) {
             self.cuckoo_manager = manager
+        }
+        
+        var id: Cuckoo.ProtocolToBeStubbedReadOnlyProperty<MockFilterableItemPayload,String> {
+            return .init(manager: cuckoo_manager, name: "id")
         }
     }
 
@@ -5179,10 +5125,20 @@ public class MockFilterableItemPayload: FilterableItemPayload, Cuckoo.ProtocolMo
             self.callMatcher = callMatcher
             self.sourceLocation = sourceLocation
         }
+        
+        var id: Cuckoo.VerifyReadOnlyProperty<String> {
+            return .init(manager: cuckoo_manager, name: "id", callMatcher: callMatcher, sourceLocation: sourceLocation)
+        }
     }
 }
 
 public class FilterableItemPayloadStub:FilterableItemPayload, @unchecked Sendable {
+    
+    public var id: String {
+        get {
+            return DefaultValueRegistry.defaultValue(for: (String).self)
+        }
+    }
 
 
 }
@@ -8030,10 +7986,53 @@ import Cuckoo
 
 
 
+// MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/OfferedDocModel+Extensions.swift'
+
+import Cuckoo
+@testable import logic_core
+@testable import logic_business
+@testable import logic_analytics
+@testable import logic_ui
+@testable import logic_api
+@testable import logic_authentication
+@testable import feature_common
+@testable import feature_presentation
+
+
+
+// MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/OfferedIssuanceModel+Extensions.swift'
+
+import Cuckoo
+@testable import logic_core
+@testable import logic_business
+@testable import logic_analytics
+@testable import logic_ui
+@testable import logic_api
+@testable import logic_authentication
+@testable import feature_common
+@testable import feature_presentation
+
+
+
 // MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/OpenID4VCI.Display+Extensions.swift'
 
 import Cuckoo
 import Foundation
+import OpenID4VCI
+@testable import logic_core
+@testable import logic_business
+@testable import logic_analytics
+@testable import logic_ui
+@testable import logic_api
+@testable import logic_authentication
+@testable import feature_common
+@testable import feature_presentation
+
+
+
+// MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/OpenID4VCI.TxCode+Extensions.swift'
+
+import Cuckoo
 import OpenID4VCI
 @testable import logic_core
 @testable import logic_business
@@ -8060,7 +8059,7 @@ import Cuckoo
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/TransactionLog+Extension.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-core/Sources/Extension/TransactionLog+Extensions.swift'
 
 import Cuckoo
 import logic_storage
@@ -9140,7 +9139,7 @@ import SwiftUI
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/ConfirmationDialog/ConfirmationDialog.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/ConfirmationDialog/ConfirmationDialogModifier.swift'
 
 import Cuckoo
 import SwiftUI
@@ -9204,7 +9203,7 @@ import logic_resources
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/AppIconAndTextData.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/AppIconAndTextView.swift'
 
 import Cuckoo
 import SwiftUI
@@ -9219,23 +9218,7 @@ import SwiftUI
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/ContentHeader.swift'
-
-import Cuckoo
-import SwiftUI
-import logic_resources
-@testable import logic_core
-@testable import logic_business
-@testable import logic_analytics
-@testable import logic_ui
-@testable import logic_api
-@testable import logic_authentication
-@testable import feature_common
-@testable import feature_presentation
-
-
-
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/RelyingParty.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/ContentHeaderView.swift'
 
 import Cuckoo
 import SwiftUI
@@ -9251,7 +9234,23 @@ import logic_resources
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeaderView.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeader/RelyingPartyView.swift'
+
+import Cuckoo
+import SwiftUI
+import logic_resources
+@testable import logic_core
+@testable import logic_business
+@testable import logic_analytics
+@testable import logic_ui
+@testable import logic_api
+@testable import logic_authentication
+@testable import feature_common
+@testable import feature_presentation
+
+
+
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Content/ContentHeaderErrorView.swift'
 
 import Cuckoo
 import SwiftUI
@@ -9428,7 +9427,7 @@ import logic_resources
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/List/ListDivider.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/List/ListDividerView.swift'
 
 import Cuckoo
 import SwiftUI
@@ -9638,22 +9637,6 @@ import logic_resources
 
 import Cuckoo
 import PartialSheet
-import SwiftUI
-import logic_resources
-@testable import logic_core
-@testable import logic_business
-@testable import logic_analytics
-@testable import logic_ui
-@testable import logic_api
-@testable import logic_authentication
-@testable import feature_common
-@testable import feature_presentation
-
-
-
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Splash/SplashBackgroundView.swift'
-
-import Cuckoo
 import SwiftUI
 import logic_resources
 @testable import logic_core
@@ -9877,22 +9860,6 @@ import logic_resources
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Wrap/WrapCheckbox.swift'
-
-import Cuckoo
-import SwiftUI
-import logic_resources
-@testable import logic_core
-@testable import logic_business
-@testable import logic_analytics
-@testable import logic_ui
-@testable import logic_api
-@testable import logic_authentication
-@testable import feature_common
-@testable import feature_presentation
-
-
-
 // MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Wrap/WrapIconView.swift'
 
 import Cuckoo
@@ -9909,7 +9876,7 @@ import logic_resources
 
 
 
-// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Wrap/WrapText.swift'
+// MARK: - Mocks generated from file: '../Modules/logic-ui/Sources/DesignSystem/Component/Wrap/WrapTextView.swift'
 
 import Cuckoo
 import SwiftUI
@@ -10354,26 +10321,6 @@ public class MockRouterHost: RouterHost, Cuckoo.ProtocolMock, @unchecked Sendabl
         )
     }
     
-    public func popTo(with p0: AppRoute, inclusive p1: Bool, animated p2: Bool) {
-        return cuckoo_manager.call(
-            "popTo(with p0: AppRoute, inclusive p1: Bool, animated p2: Bool)",
-            parameters: (p0, p1, p2),
-            escapingParameters: (p0, p1, p2),
-            superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: __defaultImplStub!.popTo(with: p0, inclusive: p1, animated: p2)
-        )
-    }
-    
-    public func pop(animated p0: Bool) {
-        return cuckoo_manager.call(
-            "pop(animated p0: Bool)",
-            parameters: (p0),
-            escapingParameters: (p0),
-            superclassCall: Cuckoo.MockManager.crashOnProtocolSuperclassCall(),
-            defaultCall: __defaultImplStub!.pop(animated: p0)
-        )
-    }
-    
     public func pop() {
         return cuckoo_manager.call(
             "pop()",
@@ -10489,22 +10436,6 @@ public class MockRouterHost: RouterHost, Cuckoo.ProtocolMock, @unchecked Sendabl
             ))
         }
         
-        func popTo<M1: Cuckoo.Matchable, M2: Cuckoo.Matchable, M3: Cuckoo.Matchable>(with p0: M1, inclusive p1: M2, animated p2: M3) -> Cuckoo.ProtocolStubNoReturnFunction<(AppRoute, Bool, Bool)> where M1.MatchedType == AppRoute, M2.MatchedType == Bool, M3.MatchedType == Bool {
-            let matchers: [Cuckoo.ParameterMatcher<(AppRoute, Bool, Bool)>] = [wrap(matchable: p0) { $0.0 }, wrap(matchable: p1) { $0.1 }, wrap(matchable: p2) { $0.2 }]
-            return .init(stub: cuckoo_manager.createStub(for: MockRouterHost.self,
-                method: "popTo(with p0: AppRoute, inclusive p1: Bool, animated p2: Bool)",
-                parameterMatchers: matchers
-            ))
-        }
-        
-        func pop<M1: Cuckoo.Matchable>(animated p0: M1) -> Cuckoo.ProtocolStubNoReturnFunction<(Bool)> where M1.MatchedType == Bool {
-            let matchers: [Cuckoo.ParameterMatcher<(Bool)>] = [wrap(matchable: p0) { $0 }]
-            return .init(stub: cuckoo_manager.createStub(for: MockRouterHost.self,
-                method: "pop(animated p0: Bool)",
-                parameterMatchers: matchers
-            ))
-        }
-        
         func pop() -> Cuckoo.ProtocolStubNoReturnFunction<()> {
             let matchers: [Cuckoo.ParameterMatcher<Void>] = []
             return .init(stub: cuckoo_manager.createStub(for: MockRouterHost.self,
@@ -10603,30 +10534,6 @@ public class MockRouterHost: RouterHost, Cuckoo.ProtocolMock, @unchecked Sendabl
             let matchers: [Cuckoo.ParameterMatcher<(AppRoute)>] = [wrap(matchable: p0) { $0 }]
             return cuckoo_manager.verify(
                 "push(with p0: AppRoute)",
-                callMatcher: callMatcher,
-                parameterMatchers: matchers,
-                sourceLocation: sourceLocation
-            )
-        }
-        
-        
-        @discardableResult
-        func popTo<M1: Cuckoo.Matchable, M2: Cuckoo.Matchable, M3: Cuckoo.Matchable>(with p0: M1, inclusive p1: M2, animated p2: M3) -> Cuckoo.__DoNotUse<(AppRoute, Bool, Bool), Void> where M1.MatchedType == AppRoute, M2.MatchedType == Bool, M3.MatchedType == Bool {
-            let matchers: [Cuckoo.ParameterMatcher<(AppRoute, Bool, Bool)>] = [wrap(matchable: p0) { $0.0 }, wrap(matchable: p1) { $0.1 }, wrap(matchable: p2) { $0.2 }]
-            return cuckoo_manager.verify(
-                "popTo(with p0: AppRoute, inclusive p1: Bool, animated p2: Bool)",
-                callMatcher: callMatcher,
-                parameterMatchers: matchers,
-                sourceLocation: sourceLocation
-            )
-        }
-        
-        
-        @discardableResult
-        func pop<M1: Cuckoo.Matchable>(animated p0: M1) -> Cuckoo.__DoNotUse<(Bool), Void> where M1.MatchedType == Bool {
-            let matchers: [Cuckoo.ParameterMatcher<(Bool)>] = [wrap(matchable: p0) { $0 }]
-            return cuckoo_manager.verify(
-                "pop(animated p0: Bool)",
                 callMatcher: callMatcher,
                 parameterMatchers: matchers,
                 sourceLocation: sourceLocation
@@ -10760,14 +10667,6 @@ public class RouterHostStub:RouterHost, @unchecked Sendable {
 
     
     public func push(with p0: AppRoute) {
-        return DefaultValueRegistry.defaultValue(for: (Void).self)
-    }
-    
-    public func popTo(with p0: AppRoute, inclusive p1: Bool, animated p2: Bool) {
-        return DefaultValueRegistry.defaultValue(for: (Void).self)
-    }
-    
-    public func pop(animated p0: Bool) {
         return DefaultValueRegistry.defaultValue(for: (Void).self)
     }
     
