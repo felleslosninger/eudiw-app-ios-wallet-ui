@@ -16,7 +16,6 @@
 import logic_storage
 import Foundation
 
-<<<<<<<< HEAD:Modules/logic-core/Sources/Controller/WalletKitTransactionLogController.swift
 final actor WalletKitTransactionLogControllerImpl: TransactionLogger {
 
   private let transactionLogStorageController: any TransactionLogStorageController
@@ -37,23 +36,5 @@ final actor WalletKitTransactionLogControllerImpl: TransactionLogger {
     } catch {
       throw error
     }
-========
-public struct WrapTextView: View {
-  private let text: LocalizableStringKey
-  private let textConfig: TextConfig
-
-  public init(text: LocalizableStringKey, textConfig: TextConfig) {
-    self.text = text
-    self.textConfig = textConfig
-  }
-
-  public var body: some View {
-    Text(text)
-      .font(textConfig.font)
-      .foregroundColor(textConfig.color)
-      .multilineTextAlignment(textConfig.textAlign)
-      .lineLimit(textConfig.maxLines)
-      .fontWeight(textConfig.fontWeight)
->>>>>>>> upstream/main:Modules/logic-ui/Sources/DesignSystem/Component/Wrap/WrapTextView.swift
   }
 }
