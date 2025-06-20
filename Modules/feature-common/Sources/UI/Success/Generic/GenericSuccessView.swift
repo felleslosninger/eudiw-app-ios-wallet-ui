@@ -19,17 +19,17 @@ import logic_resources
 
 struct GenericSuccessView<Router: RouterHost>: View {
 
-  @ObservedObject var viewmodel: GenericSuccessViewModel<Router>
+  @StateObject private var viewModel: GenericSuccessViewModel<Router>
 
   init(
-    with viewmodel: GenericSuccessViewModel<Router>) {
-      self.viewmodel = viewmodel
+    with viewModel: GenericSuccessViewModel<Router>) {
+      self._viewModel = StateObject(wrappedValue: viewModel)
     }
 
   var body: some View {
     ContentScreenView {
-      content(viewState: viewmodel.viewState) { button in
-        viewmodel.onButtonClicked(with: button)
+      content(viewState: viewModel.viewState) { button in
+        viewModel.onButtonClicked(with: button)
       }
     }
   }
@@ -42,7 +42,7 @@ private func content(
   onButtonClicked: @escaping (UIConfig.Success.Button) -> Void
 ) -> some View {
 
-  ContentHeader(
+  ContentHeaderView(
     config: ContentHeaderConfig(
       appIconAndTextData: AppIconAndTextData(
         appIcon: ThemeManager.shared.image.logoEuDigitalIndentityWallet,

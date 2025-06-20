@@ -21,6 +21,13 @@
 		F0A013992AC35ECA00065EAD /* logic-api in Resources */ = {isa = PBXBuildFile; fileRef = F0A013932AC35ECA00065EAD /* logic-api */; };
 		F0A0139A2AC35ECA00065EAD /* feature-startup in Resources */ = {isa = PBXBuildFile; fileRef = F0A013942AC35ECA00065EAD /* feature-startup */; };
 		F0A0139C2AC35ECA00065EAD /* logic-ui in Resources */ = {isa = PBXBuildFile; fileRef = F0A013962AC35ECA00065EAD /* logic-ui */; };
+		F0A984762DA917130051A4DB /* pidissuerca02_ut.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984752DA917130051A4DB /* pidissuerca02_ut.der */; };
+		F0A984772DA917130051A4DB /* pidissuerca02_nl.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984732DA917130051A4DB /* pidissuerca02_nl.der */; };
+		F0A984782DA917130051A4DB /* pidissuerca02_cz.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A9846F2DA917130051A4DB /* pidissuerca02_cz.der */; };
+		F0A984792DA917130051A4DB /* pidissuerca02_pt.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984742DA917130051A4DB /* pidissuerca02_pt.der */; };
+		F0A9847A2DA917130051A4DB /* pidissuerca02_ee.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984702DA917130051A4DB /* pidissuerca02_ee.der */; };
+		F0A9847B2DA917130051A4DB /* pidissuerca02_lu.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984722DA917130051A4DB /* pidissuerca02_lu.der */; };
+		F0A9847C2DA917130051A4DB /* pidissuerca02_eu.der in Resources */ = {isa = PBXBuildFile; fileRef = F0A984712DA917130051A4DB /* pidissuerca02_eu.der */; };
 		F0BFE9B72AD557290062826F /* feature-common in Resources */ = {isa = PBXBuildFile; fileRef = F0BFE9B62AD557290062826F /* feature-common */; };
 		F0C6207E2B6A6246007F903F /* logic-analytics in Resources */ = {isa = PBXBuildFile; fileRef = F0C6207D2B6A6246007F903F /* logic-analytics */; };
 		F12E940F2ABC6C000086EC93 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12E940E2ABC6C000086EC93 /* AppDelegate.swift */; };

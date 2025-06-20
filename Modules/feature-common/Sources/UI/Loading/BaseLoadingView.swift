@@ -19,7 +19,7 @@ import logic_resources
 
 public struct BaseLoadingView<Router: RouterHost, RequestItem: Sendable>: View {
 
-  @ObservedObject var viewModel: BaseLoadingViewModel<Router, RequestItem>
+  @ObservedObject private var viewModel: BaseLoadingViewModel<Router, RequestItem>
 
   public init(with router: Router, viewModel: BaseLoadingViewModel<Router, RequestItem>) {
     self.viewModel = viewModel
@@ -28,7 +28,7 @@ public struct BaseLoadingView<Router: RouterHost, RequestItem: Sendable>: View {
   public var body: some View {
     ContentScreenView(
       errorConfig: viewModel.viewState.error,
-      toolbarContent: viewModel.toolbarContent()
+      toolbarContent: viewModel.viewState.toolBarContent
     ) {
       content(
         contentHeaderConfig: viewModel.viewState.contentHeaderConfig
@@ -46,7 +46,7 @@ private func content(
   contentHeaderConfig: ContentHeaderConfig
 ) -> some View {
   VStack(alignment: .center, spacing: SPACING_LARGE_MEDIUM) {
-    ContentHeader(
+    ContentHeaderView(
       config: contentHeaderConfig
     )
     Spacer()

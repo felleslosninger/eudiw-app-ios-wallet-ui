@@ -16,39 +16,30 @@
 import SwiftUI
 import logic_resources
 
-public struct SplashBackgroundView: View {
+public struct ListDividerView: View {
 
-  let isAnimating: Bool
+  private let backgroundColor: Color
+  private let height: CGFloat
+  private let spacing: CGFloat
 
-  public init(isAnimating: Bool = false) {
-    self.isAnimating = isAnimating
+  public init(
+    backgroundColor: Color = Theme.shared.color.onSurfaceVariant.opacity(0.2),
+    height: CGFloat = 1,
+    spacing: CGFloat = SPACING_MEDIUM
+  ) {
+    self.backgroundColor = backgroundColor
+    self.height = height
+    self.spacing = spacing
   }
 
   public var body: some View {
-    ZStack {
-      Rectangle()
-        .fill(Theme.shared.color.surface)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-
-      Theme.shared.image.logo
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .frame(width: getScreenRect().width / 2.5)
-        .opacity(isAnimating ? 1.0 : 0)
-    }
-    .ignoresSafeArea(.all)
+    Rectangle()
+      .fill(backgroundColor)
+      .frame(height: height)
+      .padding(.horizontal, spacing)
   }
 }
 
 #Preview {
-  Group {
-    SplashBackgroundView(isAnimating: true)
-  }
-}
-
-#Preview("Dark Mode") {
-  Group {
-    SplashBackgroundView(isAnimating: true)
-  }
+  ListDividerView()
 }

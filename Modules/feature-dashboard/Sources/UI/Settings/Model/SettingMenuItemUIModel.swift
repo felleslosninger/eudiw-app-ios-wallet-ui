@@ -13,16 +13,31 @@
  * ANY KIND, either express or implied. See the Licence for the specific language
  * governing permissions and limitations under the Licence.
  */
-@testable import feature_presentation
-@testable import feature_test
-@testable import logic_test
+import Foundation
+import logic_resources
 
-final class BaseTests: EudiTest {
-    func testExample() throws {
-        // XCTest Documentation
-        // https://developer.apple.com/documentation/xctest
+struct SettingMenuItemUIModel: Identifiable {
 
-        // Defining Test Cases and Test Methods
-        // https://developer.apple.com/documentation/xctest/defining_test_cases_and_test_methods
-    }
+  let id: String
+  let title: LocalizableStringKey
+  let showDivider: Bool
+  let isShareLink: Bool
+  let isToggle: Bool
+  let action: () -> Void
+
+  init(
+    id: String = UUID().uuidString,
+    title: LocalizableStringKey,
+    showDivider: Bool = true,
+    isShareLink: Bool = false,
+    isToggle: Bool = false,
+    action: @autoclosure @escaping () -> Void
+  ) {
+    self.id = id
+    self.title = title
+    self.showDivider = showDivider
+    self.isShareLink = isShareLink
+    self.isToggle = isToggle
+    self.action = action
+  }
 }

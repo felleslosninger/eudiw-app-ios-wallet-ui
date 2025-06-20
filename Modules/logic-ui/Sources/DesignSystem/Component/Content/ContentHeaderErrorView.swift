@@ -16,7 +16,7 @@
 import SwiftUI
 import logic_resources
 
-public struct ContentHeaderView: View {
+public struct ContentHeaderErrorView: View {
 
   private let title: LocalizableStringKey?
   private let dismissIcon: Image
@@ -79,11 +79,11 @@ public struct ContentHeaderView: View {
         }
       }
     }
-    .frame(height: SPACING_EXTRA_LARGE)
+    .padding(.bottom)
   }
 }
 
-public extension ContentHeaderView {
+public extension ContentHeaderErrorView {
   struct Action: Identifiable {
 
     public let id: String
@@ -112,10 +112,10 @@ public extension ContentHeaderView {
 
 #Preview {
   Group {
-    ContentHeaderView(
+    ContentHeaderErrorView(
       title: LocalizableStringKey.loginTitle,
       actions: [
-        ContentHeaderView.Action(
+        ContentHeaderErrorView.Action(
           image: Image(systemName: "person"),
           callback: {}()
         )
@@ -124,10 +124,10 @@ public extension ContentHeaderView {
     )
     .lightModePreview()
 
-    ContentHeaderView(
+    ContentHeaderErrorView(
       title: LocalizableStringKey.loginTitle,
       actions: [
-        ContentHeaderView.Action(
+        ContentHeaderErrorView.Action(
           image: Image(systemName: "person"),
           callback: {}()
         )

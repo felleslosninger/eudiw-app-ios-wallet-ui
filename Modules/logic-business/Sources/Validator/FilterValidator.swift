@@ -19,7 +19,6 @@ public enum FilterResultPartialState: Sendable {
   case success(FilterResult)
   case completion
 }
-
 public protocol FilterValidator: Sendable {
   func getFilterResultStream() -> AsyncStream<FilterResultPartialState>
   func initializeValidator(filters: Filters, filterableList: FilterableList) async
@@ -382,5 +381,11 @@ actor FilterValidatorImpl: FilterValidator {
     let allUnselectedAreNotDefault = allFilters.filter { !$0.selected }.allSatisfy { !$0.isDefault }
 
     return allSelectedAreDefault && allUnselectedAreNotDefault
+  }
+}
+
+extension FilterValidatorImpl {
+  var appliedFiltersForTesting: Filters {
+    return appliedFilters
   }
 }
