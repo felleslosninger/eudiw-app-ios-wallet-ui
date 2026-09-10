@@ -279,13 +279,6 @@ struct WalletKitConfigImpl: WalletKitConfig {
              contextTypeMappings: classifications
            )
          ),
-         fallbackTrustSource: .staticList(
-           StaticListTrustSource(rootCertificates: staticRootCertificates)
-         ),
-         defaultPolicy: .warning,
-         requireSignedMetadata: true,
-         statusTrustPolicy: .warning
-       )
      }
        */
   }
