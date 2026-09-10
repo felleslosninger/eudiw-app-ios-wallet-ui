@@ -17,10 +17,11 @@ import logic_core
 import feature_common
 
 public struct OnlineAuthenticationRequestSuccessModel: Sendable {
-  var requestDataCells: [RequestDataUiModel]
+  var requestDataCombinations: [[RequestDataUiModel]]
   var relyingParty: String
   var dataRequestInfo: String
   var isTrusted: Bool
+  var relyingPartyRegistration: RelyingPartyRegistration
 }
 
 public enum PresentationCoordinatorPartialState: Sendable {
@@ -38,16 +39,23 @@ public enum RemoteSentResponsePartialState: Sendable {
   case failure(Error)
 }
 
+public enum PresentationRequestPartialState: Sendable {
+  case success(OnlineAuthenticationRequestSuccessModel)
+  case notSecuredRequest
+  case failure(Error)
+}
+
 public protocol PresentationInteractor: Sendable {
   func getSessionStatePublisher() async -> RemotePublisherPartialState
   func getCoordinator() async -> PresentationCoordinatorPartialState
-  func onDeviceEngagement() async -> Result<OnlineAuthenticationRequestSuccessModel, Error>
+  func onDeviceEngagement() async -> PresentationRequestPartialState
   func onResponsePrepare(requestItems: [RequestDataUiModel]) async -> Result<RequestItemConvertible, Error>
-  func onRequestReceived() async -> Result<OnlineAuthenticationRequestSuccessModel, Error>
+  func onRequestReceived() async -> PresentationRequestPartialState
   func onSendResponse() async -> RemoteSentResponsePartialState
   func updatePresentationCoordinator(with coordinator: RemoteSessionCoordinator) async
   func storeDynamicIssuancePendingUrl(with url: URL) async
   func stopPresentation() async
+  func registrationForFailedRequest() async -> RelyingPartyRegistration?
 }
 
 final actor PresentationInteractorImpl: PresentationInteractor {
@@ -85,29 +93,47 @@ final actor PresentationInteractorImpl: PresentationInteractor {
     await self.sessionCoordinatorHolder.setActiveRemoteCoordinator(coordinator)
   }
 
-  public func onDeviceEngagement() async -> Result<OnlineAuthenticationRequestSuccessModel, Error> {
+  public func onDeviceEngagement() async -> PresentationRequestPartialState {
     try? await sessionCoordinatorHolder.getActiveRemoteCoordinator().initialize()
     return await onRequestReceived()
   }
 
-  public func onRequestReceived() async -> Result<OnlineAuthenticationRequestSuccessModel, Error> {
+  public func onRequestReceived() async -> PresentationRequestPartialState {
     do {
-      let response = try await sessionCoordinatorHolder.getActiveRemoteCoordinator().requestReceived()
+      let coordinator = try await sessionCoordinatorHolder.getActiveRemoteCoordinator()
+      let response = try await coordinator.requestReceived()
       let revokedDocuments = (try? await walletKitController.fetchRevokedDocuments()) ?? []
-      let documents = response.items.filter { item in !revokedDocuments.contains(where: { $0 == item.docId }) }
-      guard !documents.isEmpty else { return .failure(WalletCoreError.unableFetchDocuments) }
+      let registrationPolicy = coordinator.relyingPartyRegistration
+      let overaskedClaims = response.overaskedClaims
+      let combinations = response.itemSets
+        .map { documentSet in
+          documentSet.filter { item in !revokedDocuments.contains(where: { $0 == item.docId }) }
+        }
+        .map { documentSet -> [RequestDataUiModel] in
+          documentSet.toUiModels(
+            with: self.walletKitController,
+            claimsAreSelectable: false,
+            overaskedPaths: documentSet.overaskedPaths(from: overaskedClaims)
+          )
+        }
+        .filter { !$0.isEmpty }
       return .success(
         .init(
-          requestDataCells: documents.toUiModels(
-            with: self.walletKitController
-          ),
+          requestDataCombinations: combinations,
           relyingParty: response.relyingParty,
           dataRequestInfo: response.dataRequestInfo,
-          isTrusted: response.isTrusted
+          isTrusted: response.isTrusted,
+          relyingPartyRegistration: await walletKitController.getVerifierRegistration(
+            policy: registrationPolicy,
+            trustViolations: coordinator.relyingPartyWarningViolations,
+            overaskedClaims: overaskedClaims,
+            verifierName: response.relyingParty,
+            verifierIsTrusted: response.isTrusted
+          )
         )
       )
     } catch {
-      return .failure(error)
+      return error.isTrustBlocked ? .notSecuredRequest : .failure(error)
     }
   }
 
@@ -151,6 +177,10 @@ final actor PresentationInteractorImpl: PresentationInteractor {
 
   public func storeDynamicIssuancePendingUrl(with url: URL) async {
     await walletKitController.storeDynamicIssuancePendingUrl(with: url)
+  }
+
+  public func registrationForFailedRequest() async -> RelyingPartyRegistration? {
+    await walletKitController.getVerifierRegistrationForFailedRequest()
   }
 
   public func stopPresentation() async {

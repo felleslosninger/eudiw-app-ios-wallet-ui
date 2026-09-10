@@ -17,6 +17,7 @@ import XCTest
 import UIKit
 import logic_business
 import feature_common
+import EudiWalletKit
 @testable import logic_core
 @testable import feature_presentation
 @testable import logic_test
@@ -45,6 +46,30 @@ final class TestPresentationInteractor: EudiTest {
 
     stub(presentationCoordinator) { mock in
       when(mock.stopPresentation()).thenDoNothing()
+      // Requests without a registration certificate: no policy, no violations.
+      when(mock.relyingPartyRegistration.get).thenReturn(nil)
+      when(mock.relyingPartyWarningViolations.get).thenReturn([])
+    }
+
+    stub(walletKitController) { mock in
+      // Registration mapping is exercised by its own tests; here it just needs to resolve.
+      when(
+        mock.getVerifierRegistration(
+          policy: any(),
+          trustViolations: any(),
+          overaskedClaims: any(),
+          verifierName: any(),
+          verifierIsTrusted: any()
+        )
+      ).thenReturn(
+        RelyingPartyRegistration(
+          name: nil,
+          uniqueId: nil,
+          isVerified: true,
+          logoUrl: nil,
+          registration: .notSupported
+        )
+      )
     }
 
     interactor = PresentationInteractorImpl(
@@ -311,7 +336,7 @@ final class TestPresentationInteractor: EudiTest {
     // Then
     switch state {
     case .success(let successModel):
-      XCTAssertEqual(successModel.requestDataCells, expectedUiModels)
+      XCTAssertEqual(successModel.requestDataCombinations, [expectedUiModels])
       XCTAssertEqual(successModel.relyingParty, request.relyingParty)
       XCTAssertEqual(successModel.dataRequestInfo, request.dataRequestInfo)
       XCTAssertEqual(successModel.isTrusted, request.isTrusted)
@@ -340,6 +365,27 @@ final class TestPresentationInteractor: EudiTest {
         error.localizedDescription,
         expectedError.localizedDescription
       )
+    default:
+      XCTFail("Wrong state \(state)")
+    }
+  }
+
+  func testOnRequestReceived_WhenCoordinatorRequestReceivedThrowsTrustError_ThenReturnsNotSecuredRequest() async {
+    // Given
+    stub(presentationCoordinator) { mock in
+      when(mock.requestReceived())
+        .thenThrow(WalletError(description: "verifier not trusted", code: .trustError))
+    }
+
+    stubFetchRevokedDocuments(with: [])
+
+    // When
+    let state = await interactor.onRequestReceived()
+
+    // Then
+    switch state {
+    case .notSecuredRequest:
+      XCTAssertTrue(true)
     default:
       XCTFail("Wrong state \(state)")
     }
@@ -514,10 +560,10 @@ final class TestPresentationInteractor: EudiTest {
     }
   }
 
-  func testOnRequestReceived_WhenAllDocumentsRevoked_ThenReturnsFailure() async {
+  func testOnRequestReceived_WhenAllDocumentsRevoked_ThenReturnsSuccessWithNoCombinations() async {
     // Given
     let mockResponse = Self.mockPresentationRequest
-    let allDocIds = mockResponse.items.map { $0.docId }
+    let allDocIds = mockResponse.itemSets.flatMap { $0 }.map { $0.docId }
 
     stub(presentationCoordinator) { mock in
       when(mock.requestReceived()).thenReturn(mockResponse)
@@ -543,13 +589,10 @@ final class TestPresentationInteractor: EudiTest {
 
     // Then
     switch result {
-    case .failure(let error):
-      XCTAssertEqual(
-        error.localizedDescription,
-        WalletCoreError.unableFetchDocuments.localizedDescription
-      )
+    case .success(let model):
+      XCTAssertTrue(model.requestDataCombinations.isEmpty)
     default:
-      XCTFail("Expected failure, got \(result)")
+      XCTFail("Expected success, got \(result)")
     }
   }
 
@@ -627,11 +670,7 @@ private extension TestPresentationInteractor {
                   mainContent: .text(.custom("value")),
                   overlineText: .custom("elementIdentifier"),
                   isEnable: true,
-                  trailingContent: .checkbox(
-                    true,
-                    true,
-                    { _ in }
-                  )
+                  trailingContent: .empty
                 ),
                 domainModel: claim
               )

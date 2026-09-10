@@ -54,20 +54,16 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "share_button")
     case .cancelButton:
       bundle.localizedString(forKey: "cancel_button")
-    case .requestDataCaption:
-      bundle.localizedString(forKey: "request_data_share_caption")
     case .requestDataInfoNotice:
       bundle.localizedString(forKey: "request_data_info_notice")
     case .requestDataTitle(let args):
       bundle.localizedStringWithArguments(forKey: "request_data_share_title", arguments: args)
+    case .requestCombinationTitle(let args):
+      bundle.localizedStringWithArguments(forKey: "request_combination_title", arguments: args)
     case .documentAdded:
       bundle.localizedString(forKey: "document_added")
-    case .requestDataSheetCaption:
-      bundle.localizedString(forKey: "request_data_sheet_caption")
     case .okButton:
       bundle.localizedString(forKey: "ok_button")
-    case .shareDataReview:
-      bundle.localizedString(forKey: "share_data_review_title")
     case .success:
       bundle.localizedString(forKey: "success")
     case .successfullySharedFollowingInformation:
@@ -94,10 +90,6 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "proxmity_connectivity_caption")
     case .unavailableField:
       bundle.localizedString(forKey: "unavailable_field")
-    case .requestDataVerifiedEntity:
-      bundle.localizedString(forKey: "request_data_verified_entity")
-    case .requestDataVerifiedEntityMessage:
-      bundle.localizedString(forKey: "request_data_verified_entity_message")
     case .changeQuickPinOption:
       bundle.localizedString(forKey: "change_quick_pin_option")
     case .quickPinSetTitle:
@@ -374,6 +366,8 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "before_today")
     case .issuanceRequest:
       bundle.localizedString(forKey: "issuance_request")
+    case .issuanceRequestTitle:
+      bundle.localizedString(forKey: "issuance_request_title")
     case .myEuWallet:
       bundle.localizedString(forKey: "My EU Wallet")
     case .categoryGovernment:
@@ -468,6 +462,14 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "revoked_modal_title")
     case .revokedModalDescription:
       bundle.localizedString(forKey: "revoked_modal_description")
+    case .issuanceBlockedTitle:
+      bundle.localizedString(forKey: "issuance_blocked_bottom_sheet_title")
+    case .issuanceBlockedMessage:
+      bundle.localizedString(forKey: "issuance_blocked_bottom_sheet_message")
+    case .presentationBlockedTitle:
+      bundle.localizedString(forKey: "request_blocked_bottom_sheet_title")
+    case .presentationBlockedMessage:
+      bundle.localizedString(forKey: "request_blocked_bottom_sheet_message")
     case .transactionDetailsRequestDeletionMessage:
       bundle.localizedString(forKey: "transaction_details_eequest_deletion_message")
     case .transactionDetailsRequestDeletionButton:
@@ -510,6 +512,8 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "document_details_remove_button")
     case .documentDetailsExpiresOn(let args):
       bundle.localizedStringWithArguments(forKey: "document_details_expires_on", arguments: args)
+    case .documentDetailsExpiredOn(let args):
+      bundle.localizedStringWithArguments(forKey: "document_details_expired_on", arguments: args)
     case .documentDetailsIssuedOn(let args):
       bundle.localizedStringWithArguments(forKey: "document_details_issued_on", arguments: args)
     case .documentDetailsRevokedDocument:
@@ -518,16 +522,46 @@ final class LocalizableManager: LocalizableManagerType {
       bundle.localizedString(forKey: "document_details_issuer_card_issued_message_text")
     case .documentDetailsIssuerCardRevokedMessageText:
       bundle.localizedString(forKey: "document_details_issuer_card_revoked_message_text")
+    case .documentDetailsIssuerCardExpiredMessageText:
+      bundle.localizedString(forKey: "document_details_issuer_card_expired_message_text")
     case .documentDetailsIssuerCardIssuedActionButtonText:
       bundle.localizedString(forKey: "document_details_issuer_card_issued_action_btn_text")
     case .batchIssuanceCounter:
       bundle.localizedString(forKey: "batch_issuance_counter")
+    case .validateIssuerRegistration:
+      bundle.localizedString(forKey: "validate_issuer_registration")
+    case .restartRequiredTitle:
+      bundle.localizedString(forKey: "restart_required_title")
+    case .restartRequiredMessage:
+      bundle.localizedString(forKey: "restart_required_message")
     case .documentProviderExtensionAcceptButton:
       bundle.localizedString(forKey: "document_provider_extension_accept_button")
     case .documentProviderExtensionRejectButton:
       bundle.localizedString(forKey: "document_provider_extension_reject_button")
     case .enterYourPin:
       bundle.localizedString(forKey: "enter_your_pin")
+    case .homeScreenAuthenticateDescription:
+      bundle.localizedString(forKey: "home_screen_authenticate_description")
+    case .relyingPartyId(let args):
+      bundle.localizedStringWithArguments(forKey: "relying_party_id", arguments: args)
+    case .privacyPolicy:
+      bundle.localizedString(forKey: "privacy_policy")
+    case .intendedUse:
+      bundle.localizedString(forKey: "intended_use")
+    case .understandRisksAgree:
+      bundle.localizedString(forKey: "understand_risks_agree")
+    case .relyingPartyNotVerifiedWarning:
+      bundle.localizedString(forKey: "relying_party_not_verified_warning")
+    case .relyingPartyOveraskedWarning:
+      bundle.localizedString(forKey: "relying_party_overasked_warning")
+    case .notRegisteredData:
+      bundle.localizedString(forKey: "not_registered_data")
+    case .issuanceRegistrationBlockedTitle:
+      bundle.localizedString(forKey: "issuance_registration_blocked_title")
+    case .issuanceRegistrationBlockedMessage:
+      bundle.localizedString(forKey: "issuance_registration_blocked_message")
+    case .continueButton:
+      bundle.localizedString(forKey: "continue_button")
     }
   }
 }

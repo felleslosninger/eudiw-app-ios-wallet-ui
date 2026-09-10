@@ -33,7 +33,8 @@ certification or a replacement for a full security assessment.
 * [`EudiWalletConfiguration`](#eudiwalletconfiguration)
 * [OpenID4VP Configuration](#openid4vp-configuration)
 * [Digital Credentials API And Identity Document Provider](#digital-credentials-api-and-identity-document-provider)
-* [Reader Trust Store](#reader-trust-store)
+* [Trust Store](#trust-store)
+* [Registration Certificates: The Second Trust Layer](#registration-certificates-the-second-trust-layer)
 * [Issuer Configuration: `issuersConfig`](#issuer-configuration-issuersconfig)
 * [Wallet Provider Attestation](#wallet-provider-attestation)
 * [Document Issuance Rules](#document-issuance-rules)
@@ -129,6 +130,7 @@ Use this checklist before the first production release.
 | Issuers | All OpenID4VCI issuer URLs point to production issuer services controlled or approved by the implementer. |
 | Wallet provider | `walletProviderAttestationUrl` points to the production Wallet Provider service and supports the expected attestation endpoints. |
 | Trust anchors | Demo and development certificates are replaced by production IACA, reader, verifier, or trust-framework anchors. |
+| Registration certificates | `wrprcProviders` points at the production registration trusted list, `validateIssuerRegistrationCertificate` is enabled, every production issuer and verifier presents a registration certificate that validates against it, and every issuer's registered scope covers the documents it offers. Issuance is refused otherwise. |
 | RQES | QTSP, TSA, client ID, redirect URI, and signing policy are production values. No QTSP client secret is hardcoded in the app. |
 | Secrets | No production secret is hardcoded in Swift, plist files, xcconfig files, or build settings. |
 | Network | App Transport Security is enforced; trust-all certificate logic is absent; TLS policy and certificate pinning strategy are agreed. |
@@ -525,7 +527,7 @@ For the complete lane usage notes, see [../fastlane/USAGE.md](../fastlane/USAGE.
 ## Dependency Governance
 
 * Use released versions, not snapshots or branch dependencies, unless formally approved.
-* Subscribe to security advisories for WalletKit, RQES UI, OpenID4VCI, SIOP OpenID4VP, ISO18013
+* Subscribe to security advisories for WalletKit, RQES UI, OpenID4VCI, OpenID4VP, ISO18013
   libraries, Wallet Storage, KeychainAccess, BluetoothKit, Swinject, and the Swift/Xcode toolchain.
 * Keep a dependency update SLA.
 * Keep `Package.resolved` committed and reviewed.
@@ -548,7 +550,7 @@ It implements:
 protocol WalletKitConfig: Sendable {
   var issuersConfig: [String: VciConfig] { get }
   var vpConfig: OpenId4VpConfiguration { get }
-  var trustedReaderRootCertificates: [x5chain] { get }
+  var trustConfiguration: TrustConfiguration { get }
   var userAuthenticationRequired: Bool { get }
   var keyOptions: KeyOptions? { get }
   var logFileName: String { get }
@@ -566,14 +568,19 @@ Each property must be reviewed.
 `WalletKitController` creates the wallet with:
 
 ```swift
-EudiWalletConfiguration(
-  serviceName: configLogic.keyChainConfig.documentStorageServiceName,
-  accessGroup: configLogic.keyChainConfig.keychainAccessGroup,
-  userAuthenticationRequired: walletKitConfig.userAuthenticationRequired,
-  trustedReaderRootCertificates: walletKitConfig.trustedReaderRootCertificates,
-  deviceAuthMethod: .deviceSignature,
-  uiCulture: Locale.current.systemLanguageCode,
-  logFileName: walletKitConfig.logFileName
+EudiWallet(
+  eudiWalletConfig: EudiWalletConfiguration(
+    serviceName: configLogic.keyChainConfig.documentStorageServiceName,
+    accessGroup: configLogic.keyChainConfig.keychainAccessGroup,
+    userAuthenticationRequired: walletKitConfig.userAuthenticationRequired,
+    deviceAuthMethod: .deviceSignature,
+    uiCulture: Locale.current.systemLanguageCode,
+    logFileName: walletKitConfig.logFileName
+  ),
+  trustConfig: walletKitConfig.trustConfiguration,
+  openID4VpConfig: walletKitConfig.vpConfig,
+  openID4VciConfigurations: walletKitConfig.issuersConfig.mapValues { $0.config },
+  // ...
 )
 ```
 
@@ -584,7 +591,7 @@ Production meaning:
 | `serviceName` | Keychain service name used by WalletKit storage. | Must be stable across app updates and match extension access needs. |
 | `accessGroup` | Keychain access group. | Must match signed entitlements and extension sharing requirements. |
 | `userAuthenticationRequired` | Whether WalletKit secure storage requires local user authentication. | For LoA High PID and other high-assurance EAA/QEAA credentials, set this to `true` unless an approved remote high-assurance hardware-backed key protection design replaces local key use. Test all issuance, presentation, extension, and background behavior. |
-| `trustedReaderRootCertificates` | Trust anchors for proximity reader authentication and supported verification flows. | Replace demo anchors with production trust anchors only. |
+| `trustConfig` | Trust configuration (`TrustConfiguration`) for reader / issuer validation: ETSI LoTE trust sources, verification-context mappings, static fallback anchors, and trust policies. Passed as a separate `EudiWallet` argument, not inside `EudiWalletConfiguration`. | Replace demo LoTE endpoints and fallback anchors with production trust anchors, and review `defaultPolicy` / `statusTrustPolicy` before go-live. |
 | `deviceAuthMethod` | Device authentication method used by WalletKit. | Current value is `.deviceSignature`; confirm with WalletKit and assurance policy. |
 | `uiCulture` | Locale passed to WalletKit. | Confirm supported locales and fallback behavior. |
 | `logFileName` | WalletKit log file name. | Disable or heavily redact production logs unless support policy requires a controlled log export. |
@@ -698,14 +705,17 @@ Fields:
 * `accessProtection` — maps to `kSecAttrAccessible*`. For production, prefer
   `.whenUnlockedThisDeviceOnly` or `.afterFirstUnlockThisDeviceOnly` unless backup/restore of these
   keys is explicitly required and approved.
-* `accessControl` — `KeyAccessControl` option set. Enable `.requireUserPresence` to gate signing on
-  biometry/passcode for LoA High PID and high-assurance EAA/QEAA credentials.
-  `.requireApplicationPassword` adds a second factor for additional data encryption.
+* `accessControl` — a `KeyAccessControl` enum value, not an option set. The named cases
+  (`.requireUserPresence`, `.requireBiometryAny`, `.requireBiometryCurrentSet`) are mutually
+  exclusive, `.empty` applies no constraint, and `.custom(_:)` passes native keychain flags through
+  verbatim, for example `.custom([.biometryCurrentSet, .or, .devicePasscode])`. Enable
+  `.requireUserPresence` to gate signing on biometry/passcode for LoA High PID and high-assurance
+  EAA/QEAA credentials.
 * `keyPurposes` — defaults to all purposes (`.signing`, `.keyAgreement`). Narrow when policy
   requires.
 
 The reference value
-(`KeyOptions(curve: .P256, secureAreaName: SecureEnclaveSecureArea.name, accessControl: [])`) is
+(`KeyOptions(curve: .P256, secureAreaName: SecureEnclaveSecureArea.name, accessControl: .empty)`) is
 suitable for the reference/demo setup. It does not enable user-presence-bound signing and does not
 set an explicit accessibility class. Review all fields against the assurance level of each
 credential class before production.
@@ -713,7 +723,7 @@ credential class before production.
 If per-document-type key policy is required (for example, stronger access control for PID than for
 low-assurance EAAs), follow the existing per-type pattern used by `documentIssuanceConfig` — extend
 `WalletKitConfig` with default and document-specific `KeyOptions`, then resolve in
-`WalletKitController` alongside the existing `rule(for:)` call sites.
+`WalletKitController` alongside the existing `credentialOptions(for:)` call sites.
 
 ## OpenID4VP Configuration
 
@@ -722,8 +732,7 @@ Current code:
 ```swift
 var vpConfig: OpenId4VpConfiguration {
   .init(
-    clientIdSchemes: [.x509SanDns, .x509Hash],
-    allowPresentingPartialClaims: true
+    clientIdSchemes: [.x509SanDns, .x509Hash]
   )
 }
 ```
@@ -735,12 +744,11 @@ Production meaning:
 | `.x509SanDns` | Verifier client identity is bound to a DNS name in an X.509 certificate. | Use when verifier certificates and trust anchors are managed and audited. |
 | `.x509Hash` | Verifier identity is bound to a certificate hash. | Use when the verifier ecosystem requires hash-based certificate binding. |
 | `.preregistered` | Verifiers are explicitly configured in the wallet. | Use for closed pilots or controlled ecosystems. Add production verifier API URL, legal name, and client ID. |
-| `allowPresentingPartialClaims` | Whether the wallet can present a subset of requested claims. | Align with legal, UX, and relying-party policy. |
 
 If using preregistered verifiers, add the relevant import and production entries:
 
 ```swift
-import SiopOpenID4VP
+import OpenID4VP
 
 var vpConfig: OpenId4VpConfiguration {
   .init(
@@ -756,8 +764,7 @@ var vpConfig: OpenId4VpConfiguration {
           )
         ]
       )
-    ],
-    allowPresentingPartialClaims: true
+    ]
   )
 }
 ```
@@ -886,6 +893,7 @@ Current registration behavior:
 * `WalletKitController` registers documents through `DocumentRegistrationManager`.
 * Registration is only attempted on iOS 26 and later where the Digital Credentials API is available.
 * Only CBOR documents are registered (`document.docDataFormat == .cbor`).
+* Registrations are reconciled against storage rather than tracked incrementally, so a document deleted in the app is deregistered, and a registration left behind by an earlier build is removed on the next launch.
 
 Production validation:
 
@@ -896,13 +904,16 @@ Production validation:
 * Confirm the extension appears and can authorize or deny the request.
 * Delete or revoke the document and confirm registration is removed or no longer usable.
 
-## Reader Trust Store
+## Trust Store
 
-Current code loads DER certificates by resource name:
+Trust is configured through `WalletKitConfig.trustConfiguration`, which is passed to `EudiWallet` as
+the `trustConfig` argument. The primary trust source is an ETSI LoTE (List of Trusted Entities)
+source that fetches signed trusted lists at runtime; a static list of bundled DER certificates is
+configured as the `fallbackTrustSource`. The fallback certificates are loaded by resource name:
 
 ```swift
-var trustedReaderRootCertificates: [x5chain] {
-  let certificates = [
+var staticRootCertificates: [Data] {
+  [
     "pidissuerca02_cz",
     "pidissuerca02_ee",
     "pidissuerca02_eu",
@@ -911,16 +922,17 @@ var trustedReaderRootCertificates: [x5chain] {
     "pidissuerca02_pt",
     "pidissuerca02_ut",
     "r45_staging"
-  ]
-  return certificates
-    .compactMap { loadCertificate($0) }
-    .map { [$0] }
+  ].compactMap { loadCertificate($0) }
 }
 ```
 
 Production guidance:
 
-* Remove demo and staging trust anchors that are not part of the production trust framework.
+* Replace the demo LoTE endpoints in `trustConfiguration` with your production trusted-list locations.
+* Review `defaultPolicy`, `requireSignedMetadata`, and `statusTrustPolicy` for production assurance.
+* Configure `wrprcProviders` as well; without it the registration certificates covered in the next
+  section have no trust source, and no registration can be validated in either direction.
+* Remove demo and staging fallback trust anchors that are not part of the production trust framework.
 * Add only production IACA, reader root, verifier, or scheme certificates approved for launch.
 * Use clear file names, for example `ms_iaca_2026.der`.
 * Document certificate owner, fingerprint, serial number, validity period, source, and rotation plan.
@@ -932,6 +944,72 @@ Certificate governance:
 * Do not store private keys in the app repository.
 * Define rotation before expiry.
 * Define emergency distrust and app update procedures.
+
+## Registration Certificates: The Second Trust Layer
+
+Trust is evaluated on two independent layers, against separate trusted lists, and passing one says
+nothing about the other:
+
+| | Access certificate (WRPAC) | Registration certificate (WRPRC) |
+|---|---|---|
+| Answers | *who is this party* | *what is it registered to do* |
+| Establishes | authentication of the issuer or verifier | the registered identity, declared purpose, privacy policy, and the attestation types and claims the party may issue or request |
+| Trust source | `wrpacProviders` | `wrprcProviders` |
+| Carried in | the request's reader authentication | `registration_cert` in the signed issuer metadata's `issuer_info` (OpenID4VCI), a `verifier_info` element with `format = registration_cert` (OpenID4VP), or the `euWrprc` entry of each `ItemsRequest` `requestInfo` (ISO/IEC 18013-5) |
+
+The two layers are not interchangeable: an authenticated issuer that is not registered for what it
+offers is refused, and a registered issuer that fails authentication is refused too.
+
+The app treats the two directions differently, and the asymmetry is intentional:
+
+* **Issuance refuses.** A document is stored only when the issuer's registration is verified and
+  covers the credential being issued. A registration that fails validation, or that does not list
+  the offered attestation, stops the flow on the "Issuance blocked" alert and reports it the same
+  way an authentication failure does, because the distinction does not change what the user can do
+  about it. *When* it is caught depends on the flow. A credential offer is resolved before anything
+  is issued, so the offer screen already knows the issuer's registration and refuses up front. The
+  issuer-list flow has no such step — WalletKit validates that issuance's certificate as part of
+  issuing and only reports the outcome afterwards, and because it writes the documents to storage
+  before the app sees that outcome, the app deletes them itself when it refuses.
+* **Presentation warns rather than blocks.** A request whose registration could not be validated
+  still reaches the consent screen, shown without the verified badge and behind a warning the user
+  must acknowledge before sharing. A request whose registration *is* verified but that reaches
+  beyond the registered scope keeps the badge, marks each requested claim outside that scope as
+  "Not registered data", and gates sharing behind the same acknowledgement. The acknowledgement is
+  not remembered between requests. Access-certificate failures continue to block outright where the
+  protocol allows it.
+
+Production requirements:
+
+* Set `wrprcProviders` to the production registration trusted list. It is the only trust source for
+  this layer.
+* Keep `validateIssuerRegistrationCertificate` enabled, and confirm every production issuer
+  publishes `issuer_info`. An issuer that publishes none never reaches the validation hook, so no
+  registration is established and the app refuses; enabling this against such an issuer fails every
+  issuance. The setting defaults to off and governs presentation too, so leaving it off ships a
+  wallet that neither refuses an unregistered issuer nor shows a verifier's registration.
+* Keep `wrprcVciTrustPolicy` at `.enforce`. It decides whether a failed WRPRC check refuses the
+  issuance — under `.warning` such an issuance proceeds and the app stores the document. Leave
+  `wrprcVpTrustPolicy` at `.warning`: presentations are required to reach the consent screen behind
+  an acknowledgement rather than terminate.
+* Confirm each issuer's registered scope actually covers what it offers, before release. An issuer
+  authenticated but not registered for a credential it issues is refused at runtime.
+* Note what neither policy covers: a status list that cannot be retrieved is always a warning and
+  never a refusal on its own. Still confirm the status endpoints of your issuers are as available as
+  the issuers themselves, since an unreachable list means revocation goes unnoticed.
+* Test both directions: a party on the registration list succeeds; one that is absent, expired, or
+  out of scope is refused on issuance and warned about on presentation.
+
+The verified badge on the consent screen is a combined verdict over **both** layers: it appears only
+when the access certificate is trusted *and* the registration raised no problem. A registration that
+failed hides the badge even behind a trusted access certificate, and a trusted registration does not
+restore it if the access certificate is untrusted. Where no registration was evaluated at all, the
+access-certificate verdict decides alone.
+
+The same verdict is carried through to the screens that follow, so a verifier badged on the consent
+screen is badged on the success screen and never the reverse. Note the issuance side answers a
+narrower question — the issuer's badge reflects its registration alone, since a credential offer
+carries no reader authentication to combine it with.
 
 ## Issuer Configuration: `issuersConfig`
 
@@ -960,7 +1038,7 @@ case .PROD:
         clientId: "wallet-prod",
         keyAttestationsConfig: .init(walletAttestationsProvider: walletKitAttestationProvider),
         authFlowRedirectionURI: URL(string: "eu.example.wallet://authorization")!,
-        requirePAR: true,
+        parUsage: .required(authorizationCodeDPoPBinding: true),
         requireDpop: true,
         cacheIssuerMetadata: true
       ),
@@ -975,7 +1053,7 @@ case .PROD:
 | `clientId` | Wallet client identifier known to the issuer or authorization server. | Use the registered production wallet client ID. |
 | `keyAttestationsConfig` | Wallet/key attestation provider used during issuance. | Use the production wallet attestation provider. |
 | `authFlowRedirectionURI` | Redirect URI used after authorization. | Must match production URL scheme registration and issuer client registration. |
-| `requirePAR` | Whether pushed authorization requests are required. | Prefer `true` where the production profile requires PAR. |
+| `parUsage` | Pushed authorization request (PAR) usage policy. Use `.required(authorizationCodeDPoPBinding:)` to require PAR, optionally binding the authorization code to DPoP. | Prefer `.required(authorizationCodeDPoPBinding: true)` where the production profile requires PAR with sender-constrained authorization codes. |
 | `requireDpop` | Whether DPoP is required. | Prefer `true` where the production profile requires sender-constrained tokens. |
 | `cacheIssuerMetadata` | Whether issuer metadata is cached. | Enable only with a metadata refresh and incident strategy. |
 | `order` | Display/order preference for scoped issuance. | Use deterministic ordering approved by product owners. |
@@ -1017,13 +1095,13 @@ the following relative paths through `WalletAttestationRepository`:
 
 ```text
 wallet-instance-attestation/jwk
-wallet-unit-attestation/jwk-set
+key-attestation/jwk-set
 ```
 
 Current payload shape:
 
 * Wallet instance attestation sends a public key payload as `{"jwk": ...}`.
-* Wallet unit attestation sends `{"jwkSet": {"keys": [...]}, "nonce": ...}` when a nonce is
+* Wallet key attestation sends `{"jwkSet": {"keys": [...]}, "nonce": ...}` when a nonce is
   available.
 
 Important: these plain-JWK endpoints are suitable only for testing/reference integration unless your
@@ -1042,7 +1120,7 @@ Production implementers must not only change `walletProviderAttestationUrl`. If 
 contract changes from plain JWK submission to attestation-backed submission, update
 `WalletAttestationApi`, `WalletKitAttestationProviderImpl`, payload generation, response parsing,
 tests, and issuer compatibility checks together. The response should still provide the
-`walletInstanceAttestation` and `walletUnitAttestation` values expected by WalletKit after backend
+`walletInstanceAttestation` and `keyAttestation` values expected by WalletKit after backend
 validation.
 
 Production requirements:
@@ -1060,15 +1138,13 @@ Production requirements:
 
 ## Document Issuance Rules
 
-Current code configures:
+Current code configures `documentIssuanceConfig` with:
 
-* Default credential policy: `.rotateUse`, `numberOfCredentials: 1`.
-* PID document-specific policy: `.oneTimeUse`.
+* Default credential options (`defaultCredentialOptions`): `credentialPolicy: .rotateUse`, `batchSize: 1`.
+* PID document-specific options (`documentSpecificCredentialOptions`): `credentialPolicy: .oneTimeUse`.
 * Current Demo PID batch size: `10`.
 * Current Dev PID batch size: `60`.
-* Reissuance rule:
-  * `minNumberOfCredentials: 2`
-  * `minExpirationHours: 14`
+* Background reissuance rule (`reIssuanceBackgroundRule`):
   * `backgroundIntervalSeconds: 300`
 
 Production decisions:
@@ -1987,7 +2063,7 @@ Must provide:
 Must provide:
 
 * Wallet instance attestation.
-* Wallet unit/key attestation.
+* Wallet key attestation.
 * App/device risk policy.
 * App Attest verification where used.
 * Nonce and replay protection.

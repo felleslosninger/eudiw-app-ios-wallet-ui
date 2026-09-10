@@ -35,9 +35,17 @@ Based on the Build Variant of the Wallet (e.g., Dev)
 struct WalletKitConfigImpl: WalletKitConfig {
 
   let configLogic: ConfigLogic
+  let transactionLoggerImpl: TransactionLogger
+  let walletKitAttestationProvider: WalletKitAttestationProvider
 
-  init(configLogic: ConfigLogic) {
+  init(
+    configLogic: ConfigLogic,
+    transactionLogger: TransactionLogger,
+    walletKitAttestationProvider: WalletKitAttestationProvider
+  ) {
     self.configLogic = configLogic
+    self.transactionLoggerImpl = transactionLogger
+    self.walletKitAttestationProvider = walletKitAttestationProvider
   }
 
   var issuersConfig: [String: VciConfig] {
@@ -51,7 +59,7 @@ struct WalletKitConfigImpl: WalletKitConfig {
                 clientId: "your_demo_client_id_or_nil",
                 keyAttestationsConfig: .init(walletAttestationsProvider: walletKitAttestationProvider),
                 authFlowRedirectionURI: URL(string: "your_demo_redirect")!,
-                requirePAR: should_use_par_bool,
+                parUsage: .required(authorizationCodeDPoPBinding: should_bind_par_dpop_bool),
                 requireDpop: should_use_dpop_bool,
                 cacheIssuerMetadata: should_cache_metadata_bool
             ),
@@ -67,7 +75,7 @@ struct WalletKitConfigImpl: WalletKitConfig {
                   clientId: "your_dev_client_id_or_nil",
                   keyAttestationsConfig: .init(walletAttestationsProvider: walletKitAttestationProvider),
                   authFlowRedirectionURI: URL(string: "your_dev_redirect")!,
-                  requirePAR: should_use_par_bool,
+                  parUsage: .required(authorizationCodeDPoPBinding: should_bind_par_dpop_bool),
                   requireDpop: should_use_dpop_bool,
                   cacheIssuerMetadata: should_cache_metadata_bool
               ),
@@ -114,26 +122,61 @@ final class WalletProviderAttestationConfigImpl: WalletProviderAttestationConfig
 }
 ```
 
-3. Trusted certificates
+3. Trust configuration
 
 Via the *WalletKitConfig* protocol inside the logic-core module.
 
 ```swift
 protocol WalletKitConfig: Sendable {
   /**
-   * Reader Configuration
+   * Trust configuration: ETSI LoTE (List of Trusted Entities) trust sources,
+   * verification-context mappings and trust policies used for reader / issuer validation.
    */
-  var trustedReaderRootCertificates: [x5chain] { get }
+  var trustConfiguration: TrustConfiguration { get }
 }
 ```
 
-The *WalletKitConfigImpl* implementation of the *WalletKitConfig* protocol can be located inside the logic-core module.
+The *WalletKitConfigImpl* implementation of the *WalletKitConfig* protocol can be located inside the logic-core module. The resulting `TrustConfiguration` is passed to `EudiWallet` as the `trustConfig` argument in `WalletKitController`.
 
-The reader/IACA trust-anchor certificates ship with this repo as DER files in [`Wallet/Certificate`](../Wallet/Certificate) (e.g. `pidissuerca02_eu.der`, `r45_staging.der`). The file names — without the `.der` extension — must match the `certificates` array in `WalletKitConfigImpl.trustedReaderRootCertificates`, which loads each via `loadCertificate(_:)`. Replace these with your production trust anchors before go-live.
+The primary trust source is an ETSI LoTE (List of Trusted Entities) source that fetches signed trusted lists (PID / WRPAC / PubEAA providers) at runtime. A static list of bundled root certificates is configured as the `fallbackTrustSource`. These fallback certificates ship with this repo as DER files in [`Wallet/Certificate`](../Wallet/Certificate) (e.g. `pidissuerca02_eu.der`, `r45_staging.der`). The file names — without the `.der` extension — must match the array in `WalletKitConfigImpl.staticRootCertificates`, which loads each via `loadCertificate(_:)`. Replace the LoTE endpoints and the fallback anchors with your production values before go-live.
 
 ```swift
-  var trustedReaderRootCertificates: [x5chain] {
-    let certificates = [
+  var trustConfiguration: TrustConfiguration {
+    let loteLocations = SupportedLists<NSString>(
+      pidProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PIDProviders.jwt",
+      walletProviders: nil,
+      wrpacProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPACProviders.jwt",
+      wrprcProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPRCProviders.jwt",
+      pubEaaProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PubEAAProviders.jwt",
+      qeaProviders: nil,
+      eaaProviders: [:]
+    )
+
+    let classifications: EtsiContextTypeMappings = [
+      DocumentTypeIdentifier.mDocPid.rawValue: .pid,
+      DocumentTypeIdentifier.sdJwtPid.rawValue: .pid
+    ]
+
+    return TrustConfiguration(
+      trustSource: .etsi(
+        EtsiTrustSource(
+          loteLocations: loteLocations,
+          contextTypeMappings: classifications
+        )
+      ),
+      fallbackTrustSource: .staticList(
+        StaticListTrustSource(rootCertificates: staticRootCertificates)
+      ),
+      defaultPolicy: .warning,
+      requireSignedMetadata: true,
+      statusTrustPolicy: .warning,
+      wrprcVpTrustPolicy: .warning,
+      wrprcVciTrustPolicy: .enforce
+    )
+  }
+
+  var staticRootCertificates: [Data] {
+    [
       "pidissuerca02_cz",
       "pidissuerca02_ee",
       "pidissuerca02_eu",
@@ -142,12 +185,54 @@ The reader/IACA trust-anchor certificates ship with this repo as DER files in [`
       "pidissuerca02_pt",
       "pidissuerca02_ut",
       "r45_staging"
-    ]
-    return certificates
-      .compactMap { loadCertificate($0) }
-      .map { [$0] }
+    ].compactMap { loadCertificate($0) }
   }
 ```
+
+**Two trust layers.** An access certificate (WRPAC) answers *who is this party*, a registration
+certificate (WRPRC) answers *what is it registered to do* — the registered identity, declared
+purpose, privacy policy, and the attestation types and claims the party may issue or request. They
+are validated independently and against separate trusted lists, so passing one says nothing about
+the other. `wrprcProviders` is what makes the second layer possible; leave it `nil` and no
+registration certificate can be validated in either direction.
+
+The app treats the two directions differently, and the asymmetry is deliberate:
+
+* **Issuance refuses.** A document is stored only when the issuer's registration is verified and
+  covers what is being issued. A registration that fails validation, or that does not list the
+  offered attestation, stops the flow on the "Issuance blocked" alert. A credential offer is
+  resolved before anything is issued, so that refusal happens up front; the issuer-list flow only
+  learns the outcome after the kit has issued, so any document it already wrote to storage is
+  deleted behind the scenes. The same applies to a registration that was never established at all —
+  but only while `wrprcVciTrustPolicy` is `.enforce`; see below.
+* **Presentation warns.** A request whose registration could not be validated, or that reaches
+  beyond the registered scope, still reaches the consent screen. It is shown without the verified
+  badge, the claims outside the registered scope are marked, and Share stays disabled until the user
+  acknowledges the warning. The acknowledgement is deliberately not remembered between requests. A
+  certificate that failed validation still describes the requester where it decoded far enough to
+  do so, since the warning and the missing badge already carry the verdict.
+
+All of the presentation behaviour above is conditional on `validateIssuerRegistrationCertificate`.
+With it off no verifier registration is resolved or displayed on either flow, and the requester is
+identified by its access certificate alone. Remote presentation skips the check outright, since the
+setting reaches `OpenId4VpConfiguration` and no registration policy is installed. Proximity still
+performs it inside WalletKit, which exposes no equivalent flag, but the app ignores the result.
+
+Two settings govern the issuance side, and both must be on for it to refuse anything. The first of
+them governs presentation as well:
+
+| Setting | Where | Effect |
+|---|---|---|
+| `validateIssuerRegistrationCertificate` | `WalletKitConfig` | Turns WRPRC validation on, for OpenID4VCI and for presentation alike. It is exposed as **Check Registration Certificates** in Settings and **defaults to off**. Off means no registration is ever evaluated: issuance never refuses on this basis, and no verifier registration is resolved or shown. An issuer that publishes no `issuer_info` never reaches the validation hook at all, so no registration is established and the app refuses on that basis; enabling this against such an issuer fails every issuance. |
+| `wrprcVciTrustPolicy` | `TrustConfiguration` | Decides what a failed WRPRC check does to an **issuance**. `.enforce` refuses: an expired, revoked or suspended certificate, a missing status list, a broken trust chain, or an offer reaching past the registered scope all stop the flow. `.warning` records the problem and lets the issuance through. |
+
+`wrprcVpTrustPolicy` is the same decision for **presentations**, and the app deliberately sets it to
+`.warning` so a failed check reaches the consent screen behind an acknowledgement rather than ending
+the flow. A single policy governed both directions until wallet-kit 0.40.2, which could not express
+that asymmetry.
+
+Note what neither policy covers: a status list that cannot be retrieved is always a warning, never a
+refusal, so a transient network failure does not block on its own.
 
 4. VP API
 
@@ -162,17 +247,25 @@ protocol WalletKitConfig: Sendable {
 }
 ```
 
-The preregistered scheme is optional. If you want to use it, please add the following: the `SiopOpenID4VP` import and the `.preregistered` option in the `clientIdSchemes` array.
+The preregistered scheme is optional. If you want to use it, please add the following: the `OpenID4VP` import and the `.preregistered` option in the `clientIdSchemes` array.
 
 ```swift
-import SiopOpenID4VP
+import OpenID4VP
 
 struct WalletKitConfigImpl: WalletKitConfig {
 
   let configLogic: ConfigLogic
+  let transactionLoggerImpl: TransactionLogger
+  let walletKitAttestationProvider: WalletKitAttestationProvider
 
-  init(configLogic: ConfigLogic) {
+  init(
+    configLogic: ConfigLogic,
+    transactionLogger: TransactionLogger,
+    walletKitAttestationProvider: WalletKitAttestationProvider
+  ) {
     self.configLogic = configLogic
+    self.transactionLoggerImpl = transactionLogger
+    self.walletKitAttestationProvider = walletKitAttestationProvider
   }
 
   var vpConfig: OpenId4VpConfiguration {
@@ -371,9 +464,9 @@ public extension DeepLink {
   enum Action: String, Equatable, Sendable {
 
     case openid4vp
-	case haip_vp
     case credential_offer
-	case haip_vci
+    case haip_vci
+    case haip_vp
     case rqes
     case external
 
@@ -383,10 +476,10 @@ public extension DeepLink {
     ) -> Action? {
       switch scheme {
       case _ where openid4vp.getSchemas(with: urlSchemaController).contains(scheme),
-		_ where haip_vp.getSchemas(with: urlSchemaController).contains(scheme):
+        _ where haip_vp.getSchemas(with: urlSchemaController).contains(scheme):
         return .openid4vp
       case _ where credential_offer.getSchemas(with: urlSchemaController).contains(scheme),
-		_ where haip_vci.getSchemas(with: urlSchemaController).contains(scheme):
+        _ where haip_vci.getSchemas(with: urlSchemaController).contains(scheme):
         return .credential_offer
       case _ where rqes.getSchemas(with: urlSchemaController).contains(scheme):
         return .rqes
@@ -405,9 +498,9 @@ public extension DeepLink {
   enum Action: String, Equatable, Sendable {
 
     case openid4vp
-	case haip_vp
     case credential_offer
-	case haip_vci
+    case haip_vci
+    case haip_vp
     case rqes
     case custom_my_offer
     case external
@@ -418,11 +511,11 @@ public extension DeepLink {
     ) -> Action? {
       switch scheme {
       case _ where openid4vp.getSchemas(with: urlSchemaController).contains(scheme),
-		_ where haip_vp.getSchemas(with: urlSchemaController).contains(scheme):
+        _ where haip_vp.getSchemas(with: urlSchemaController).contains(scheme):
         return .openid4vp
       case _ where credential_offer.getSchemas(with: urlSchemaController).contains(scheme),
-		_ where haip_vci.getSchemas(with: urlSchemaController).contains(scheme),
-		_ where custom_my_offer.getSchemas(with: urlSchemaController).contains(scheme):
+        _ where haip_vci.getSchemas(with: urlSchemaController).contains(scheme),
+        _ where custom_my_offer.getSchemas(with: urlSchemaController).contains(scheme):
         return .credential_offer
       case _ where rqes.getSchemas(with: urlSchemaController).contains(scheme):
         return .rqes
@@ -743,6 +836,8 @@ At startup it initializes `DocumentProviderDIContainer`, which assembles `LogicI
 In `Modules/logic-core/Sources/Controller/WalletKitController.swift`, documents are registered to `IdentityDocumentProviderRegistrationStore` (iOS 26+) through `DocumentRegistrationManager`.
 
 Only CBOR documents are registered (`document.docDataFormat == .cbor`), which controls what the extension can serve for Identity Document requests.
+
+Registrations are reconciled against wallet storage after every operation that adds or removes a document, and on startup: a registration whose document is no longer held is removed.
 
 ### Validation checklist
 

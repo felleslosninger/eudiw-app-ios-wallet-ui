@@ -20,6 +20,8 @@ import UIKit
 public protocol RemoteSessionCoordinator: Sendable {
 
   var sendableCurrentValueSubject: SendableCurrentValueSubject<PresentationState> { get }
+  var relyingPartyRegistration: WrpRegistrationPolicy? { get }
+  var relyingPartyWarningViolations: [String] { get }
 
   init(session: PresentationSession)
 
@@ -39,6 +41,13 @@ final class RemoteSessionCoordinatorImpl: RemoteSessionCoordinator {
 
   private let sendableAnyCancellable: SendableAnyCancellable = .init()
   private let session: PresentationSession
+
+  var relyingPartyRegistration: WrpRegistrationPolicy? { session.wrpVerifierPolicy }
+  var relyingPartyWarningViolations: [String] { (session.wrpVerifierWarnings?[""] ?? []).map(\.message) }
+
+  private var overaskedClaims: [OveraskedClaim] {
+    (session.wrpVerifierWarnings?.values.flatMap { $0 } ?? []).toOveraskedClaims()
+  }
 
   init(session: PresentationSession) {
     self.session = session
@@ -70,8 +79,8 @@ final class RemoteSessionCoordinatorImpl: RemoteSessionCoordinator {
   }
 
   public func requestReceived() async throws -> PresentationRequest {
-    guard session.disclosedDocuments.isEmpty == false else {
-      throw session.uiError ?? .init(description: "Failed to Find known documents to send")
+    guard session.disclosedDocumentSets.contains(where: { !$0.docElements.isEmpty }) else {
+      throw session.uiError ?? .init(description: "Failed to Find known documents to send", code: .noDocumentsAvailable)
     }
     return createRequest()
   }
@@ -101,10 +110,11 @@ final class RemoteSessionCoordinatorImpl: RemoteSessionCoordinator {
 
   private func createRequest() -> PresentationRequest {
     PresentationRequest(
-      items: session.disclosedDocuments,
+      itemSets: session.disclosedDocumentSets.map(\.docElements),
       relyingParty: session.readerCertIssuer ?? LocalizableStringKey.unknownVerifier.toString,
       dataRequestInfo: session.readerCertValidationMessage ?? LocalizableStringKey.requestDataInfoNotice.toString,
-      isTrusted: session.readerCertIssuerValid == true
+      isTrusted: session.readerCertIssuerValid == true,
+      overaskedClaims: overaskedClaims
     )
   }
 }
