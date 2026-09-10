@@ -206,10 +206,14 @@ extension Constants {
 
 extension Constants {
   struct MockPresentationService: PresentationService {
-    func sendResponse(userAccepted: Bool, itemsToSend: EudiWalletKit.RequestItems, deviceNameSpacesToSend: MdocDataTransfer18013.RequestDeviceNameSpaces?, onSuccess: (@Sendable (URL?) -> Void)?) async throws {}
+    func sendResponse(userAccepted: Bool, itemsToSend: EudiWalletKit.RequestItems, deviceNameSpacesToSend: MdocDataTransfer18013.RequestDeviceNameSpaces?, authenticationContext: ThreadSafeAuthContext, onSuccess: (@Sendable (URL?) -> Void)?) async throws {}
 
     var zkpDocumentIds: [WalletStorage.Document.ID]?
-    
+
+    var wrpVerifierPolicy: WrpRegistrationPolicy?
+
+    var wrpVerifierWarnings: [String: [PresentationPolicyViolation]]?
+
     func waitForDisconnect() async throws {}
     
     var transactionLog: TransactionLog
@@ -303,7 +307,8 @@ extension Constants {
     storageManager: .init(storageService: mockStorageService),
     docIdToPresentInfo: [:],
     documentKeyIndexes: [:],
-    userAuthenticationRequired: false
+    userAuthenticationRequired: false,
+    localAuthenticationContext: ThreadSafeAuthContext()
   )
 }
 
@@ -336,6 +341,7 @@ extension Constants {
     ],
     relyingParty: "Relying Party",
     dataRequestInfo: "Data Request Info",
-    isTrusted: true
+    isTrusted: true,
+    overaskedClaims: []
   )
 }

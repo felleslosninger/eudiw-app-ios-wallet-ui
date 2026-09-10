@@ -26,6 +26,17 @@ protocol WalletKitConfig: Sendable {
   var issuersConfig: [String: VciConfig] { get }
 
   /**
+   * Whether the issuer's WRP registration certificate (WRPRC), delivered in the issuer metadata
+   * `issuer_info`, is validated during issuance.
+   *
+   * Requires `trustConfiguration.requireSignedMetadata`, which supplies the WRPAC the certificate
+   * is bound to. Note that a missing WRPRC is a hard failure in the OpenID4VCI library, not a
+   * warning: enabling this against an issuer that does not publish `issuer_info` fails every
+   * issuance.
+   */
+  var validateIssuerRegistrationCertificate: Bool { get }
+
+  /**
    * VP Configuration
    */
   var vpConfig: OpenId4VpConfiguration { get }
@@ -77,15 +88,18 @@ struct WalletKitConfigImpl: WalletKitConfig {
   let configLogic: ConfigLogic
   let transactionLoggerImpl: TransactionLogger
   let walletKitAttestationProvider: WalletKitAttestationProvider
+  let prefsController: PrefsController
 
   init(
     configLogic: ConfigLogic,
     transactionLogger: TransactionLogger,
-    walletKitAttestationProvider: WalletKitAttestationProvider
+    walletKitAttestationProvider: WalletKitAttestationProvider,
+    prefsController: PrefsController
   ) {
     self.configLogic = configLogic
     self.transactionLoggerImpl = transactionLogger
     self.walletKitAttestationProvider = walletKitAttestationProvider
+    self.prefsController = prefsController
   }
 
   var userAuthenticationRequired: Bool {
@@ -96,8 +110,12 @@ struct WalletKitConfigImpl: WalletKitConfig {
     KeyOptions(
       curve: .P256,
       secureAreaName: SecureEnclaveSecureArea.name,
-      accessControl: []
+      accessControl: .empty
     )
+  }
+
+  var validateIssuerRegistrationCertificate: Bool {
+    prefsController.getBool(forKey: .validateIssuerRegistrationCertificate)
   }
 
   var issuersConfig: [String: VciConfig] {
@@ -109,42 +127,87 @@ struct WalletKitConfigImpl: WalletKitConfig {
           .init(
             config: .init(
               credentialIssuerURL: "https://utsteder.test.eidas2sandkasse.net/pid",
-              clientId: "demo-lommebok-test",
+              clientId: "eudiw-abca",
               keyAttestationsConfig: .init(
                 walletAttestationsProvider: walletKitAttestationProvider,
                 popKeyOptions: KeyOptions(
                   secureAreaName: SecureEnclaveSecureArea.name,
-                  accessControl: []
+                  accessControl: .empty
                 )
               ),
               parUsage: .required(authorizationCodeDPoPBinding: true),
               requireDpop: true,
-              issuerMetadataPolicy: .ignoreSigned,
-              cacheIssuerMetadata: true
+              issuerMetadataPolicy: trustConfiguration.issuerMetadataPolicy,
+              validateRegistrationCertificate: validateIssuerRegistrationCertificate,
+              cacheIssuerMetadata: false
             ),
             order: 1
+          ),
+          /*
+          .init(
+            config: .init(
+              credentialIssuerURL: "https://issuer-backend.eudiw.dev",
+              clientId: "eudiw-abca",
+              keyAttestationsConfig: .init(
+                walletAttestationsProvider: walletKitAttestationProvider,
+                popKeyOptions: KeyOptions(
+                  secureAreaName: SecureEnclaveSecureArea.name,
+                  accessControl: .empty
+                )
+              ),
+              authFlowRedirectionURI: URL(string: "eu.europa.ec.euidi://authorization")!,
+              parUsage: .required(authorizationCodeDPoPBinding: true),
+              requireDpop: true,
+              issuerMetadataPolicy: trustConfiguration.issuerMetadataPolicy,
+              validateRegistrationCertificate: validateIssuerRegistrationCertificate,
+              cacheIssuerMetadata: false
+            ),
+            order: 0
           )
+           */
         ]
       case .DEV:
         return [
           .init(
             config: .init(
               credentialIssuerURL: "https://utsteder.eidas2sandkasse.dev/pid",
-              clientId: "demo-lommebok-dev",
+              clientId: "eudiw-abca",
               keyAttestationsConfig: .init(
                 walletAttestationsProvider: walletKitAttestationProvider,
                 popKeyOptions: KeyOptions(
                   secureAreaName: SecureEnclaveSecureArea.name,
-                  accessControl: []
+                  accessControl: .empty
                 )
               ),
               parUsage: .required(authorizationCodeDPoPBinding: true),
               requireDpop: true,
-              issuerMetadataPolicy: .ignoreSigned,
-              cacheIssuerMetadata: true
+              issuerMetadataPolicy: trustConfiguration.issuerMetadataPolicy,
+              validateRegistrationCertificate: validateIssuerRegistrationCertificate,
+              cacheIssuerMetadata: false
             ),
             order: 1
+          ),/*
+          .init(
+            config: .init(
+              credentialIssuerURL: "https://dev.issuer-backend.eudiw.dev",
+              clientId: "eudiw-abca",
+              keyAttestationsConfig: .init(
+                walletAttestationsProvider: walletKitAttestationProvider,
+                popKeyOptions: KeyOptions(
+                  secureAreaName: SecureEnclaveSecureArea.name,
+                  accessControl: .empty
+                )
+              ),
+              authFlowRedirectionURI: URL(string: "eu.europa.ec.euidi://authorization")!,
+              parUsage: .required(authorizationCodeDPoPBinding: true),
+              requireDpop: true,
+              issuerMetadataPolicy: trustConfiguration.issuerMetadataPolicy,
+              validateRegistrationCertificate: validateIssuerRegistrationCertificate,
+              cacheIssuerMetadata: false
+            ),
+            order: 0
           )
+          */
         ]
       }
     }()
@@ -165,7 +228,8 @@ struct WalletKitConfigImpl: WalletKitConfig {
 
   var vpConfig: OpenId4VpConfiguration {
     .init(
-      clientIdSchemes: [.x509SanDns, .x509Hash]
+      clientIdSchemes: [.x509SanDns, .x509Hash],
+      validateRegistrationCertificate: validateIssuerRegistrationCertificate
     )
   }
     
@@ -175,7 +239,7 @@ struct WalletKitConfigImpl: WalletKitConfig {
       pidProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PIDProviders.jwt",
       walletProviders: nil,
       wrpacProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPACProviders.jwt",
-      wrprcProviders: nil,
+      wrprcProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/WRPRCProviders.jwt",
       pubEaaProviders: "https://trustedlist.serviceproviders.eudiw.dev/LOTE/json/PubEAAProviders.jwt",
       qeaProviders: nil,
       eaaProviders: [:]
@@ -197,8 +261,14 @@ struct WalletKitConfigImpl: WalletKitConfig {
           method: .pkix
         )
       ),
-      fallbackTrustSource: nil,
-      requireSignedMetadata: true
+      fallbackTrustSource: .staticList(
+        StaticListTrustSource(rootCertificates: staticRootCertificates)
+      ),
+      defaultPolicy: .warning,
+      requireSignedMetadata: true,
+      statusTrustPolicy: .warning,
+      wrprcVpTrustPolicy: .warning,
+      wrprcVciTrustPolicy: .enforce
     )
       
       /*
